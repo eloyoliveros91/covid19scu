@@ -32,7 +32,7 @@ def confirmadosStgo():
         fig.add_trace(go.Scatter(x=x, y=casosConfirmados[col],
                             mode='lines+markers+text',
                             name=col,
-                            text = y,
+                            text = casosConfirmados[col],
                             textposition = "bottom center",
                             textfont = dict(color='rgb(0,0,0)'),
                             hoverinfo='x+y',
