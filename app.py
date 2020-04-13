@@ -282,7 +282,7 @@ def create_top(title, content):
     return(card)
 
 def totalCasosPais():
-    pais = pd.read_excel('C:/Users/Eloy/Desktop/COVID 19/Dashboard/dashboard/data/COVID-19.xlsx', sheet_name = 'Evolucion')
+    pais = pd.read_excel(DATA_PATH.joinpath('COVID-19.xlsx'), sheet_name = 'Evolucion')
     pais = pais.set_index('Provincia').dropna(1)
     last = pais.columns[len(pais.columns)-1]
     provincias = pais[last]
