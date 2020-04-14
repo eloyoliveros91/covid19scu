@@ -13,7 +13,7 @@ PATH = pathlib.Path(__file__).parent
 DATA_PATH = PATH.joinpath("data").resolve()
 
 #external_stylesheets =['https://codepen.io/chriddyp/pen/bWLwgP.css', dbc.themes.BOOTSTRAP]
-
+np.seterr(divide='ignore', invalid='ignore')
 # reading data
 casosConfirmados = pd.read_excel(DATA_PATH.joinpath("COVID-19.xlsx"), sheet_name = 'Casos SCU')
 muestras = pd.read_excel(DATA_PATH.joinpath("muestras.xlsx"), index_col=0)
@@ -321,8 +321,8 @@ def muestrasProvincias():
     x = np.datetime_as_string( muestras['FR'].unique(), unit='D')
     y = muestras[muestras['PROVINCIA']=='SANTIAGO'].groupby('FR').sum().sum(1).values
 
-    provincias = ['GRANMA', 'LAS TUNAS', 'HOLGUÍN', 'GUANTÁNAMO']
-    names = ['Granma', 'Las Tunas', 'Holguín', 'Guantánamo']
+    provincias = ['GRANMA', 'LAS TUNAS', 'HOLGUÍN', 'GUANTÁNAMO', 'OTRO']
+    names = ['Granma', 'Las Tunas', 'Holguín', 'Guantánamo', 'Otro']
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=x, y=y,
                     mode='lines+markers+text',
@@ -422,9 +422,20 @@ def positividad():
     )
     return fig
 
+def sintomas():
+    sintomas = survey['Sintomas'].fillna('Sintomático').value_counts()
+
+    fig = go.Figure(data=[go.Pie(labels=sintomas.index.values, values=sintomas.values, textinfo='label+percent',
+                                insidetextorientation='radial'
+                                )])
+    fig.update(layout_showlegend=False)
+    fig.update_traces(marker=dict(line=dict(color='#000000', width=2)), textfont_size=20)
+
+    return fig
+
 summary = html.Div([
                     imagen(),
-                    create_top('Fecha', str(ingresosDF.iloc[-1]['Fecha'].day) + "-" + str(ingresosDF.iloc[-1]['Fecha'].month
+                    create_top('Fecha', str(ingresosDF.iloc[-1]['Fecha'].day) + "/" + str(ingresosDF.iloc[-1]['Fecha'].month
                     )),
                     create_top('Confirmados', ultimoDia[3]),
                     create_top('Ingresados', ingresosDF.dropna(1).iloc[-1]['Pacientes Ingresados']),
@@ -459,6 +470,7 @@ app.layout = html.Div([
                             'displayModeBar': False
                         } 
                     ),
+                    dcc.Loading(id="loading-1", children=[html.Div(id="loading-output-1")], type="circle")
               ], className='card shadow mb-4'),
             ], className='col-xl-8 col-lg-7 px-1'),
             # Pie Chart -->
@@ -543,17 +555,17 @@ app.layout = html.Div([
         html.Div([ 
             html.Div([                 
             html.Div([
-                html.H6(className='text-gray-100 m-0 font-weight-bold text-primary', children='Relación de Muestras Analizadas'),                  
+                html.H6(className='text-gray-100 m-0 font-weight-bold text-primary', children='Relación por Municipios y Áreas de Salud'),                  
             ], className='card-header bg-gradient-primary py-2 d-flex flex-row align-items-center justify-content-between'),
                 dcc.Graph(
-                    id='muestrasStgo',
-                    figure=muestrasStgo(),
+                    id='municipioAreaSalud',
+                    figure=mcpiosAreaSalud(),
                     config={
                         'displayModeBar': False
                     } 
                 ),                  
             ], className='card shadow mb-4'),
-        ], className='col-xl-5 col-lg-5 px-1'),          
+        ], className='col-xl-5 col-lg-5 px-1'),                 
     ], className='row'),
     
     html.Div([
@@ -578,17 +590,17 @@ app.layout = html.Div([
         html.Div([ 
             html.Div([                 
             html.Div([
-                html.H6(className='text-gray-100 m-0 font-weight-bold text-primary', children='Relación por Municipios y Áreas de Salud'),                  
+                html.H6(className='text-gray-100 m-0 font-weight-bold text-primary', children='Relación de Muestras Analizadas'),                  
             ], className='card-header bg-gradient-primary py-2 d-flex flex-row align-items-center justify-content-between'),
                 dcc.Graph(
-                    id='municipioAreaSalud',
-                    figure=mcpiosAreaSalud(),
+                    id='muestrasStgo',
+                    figure=muestrasStgo(),
                     config={
                         'displayModeBar': False
                     } 
                 ),                  
             ], className='card shadow mb-4'),
-        ], className='col-xl-5 col-lg-5 px-1'),          
+        ], className='col-xl-5 col-lg-5 px-1'),         
     ], className='row'),
     
 
