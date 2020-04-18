@@ -73,7 +73,6 @@ def riesgoSantiago():
 def riesgoCuba():
     tabla = pais.set_index('Provincia').drop(['Prueba', 'Fecha', 'Total'])
     pobProv = poblacionMunicipios.drop('Municipios', axis=1).groupby('Provincia').sum().reset_index()
-    pobProv.at[11, 'Provincia'] = 'Isla de la Juventud'
 
     provincias = tabla.index
     fig = go.Figure()
@@ -86,23 +85,25 @@ def riesgoCuba():
                             name=i,
                             line=dict(width = 4),
                             marker=dict(size=10),
+                            line_shape='spline',
                             hoverinfo = 'name+y'
                             ))
 
 
-    fig.update_layout(xaxis=dict(
+    fig.update_layout(
+        xaxis=dict(
             title = 'Días desde el Pimer caso confirmado en Cuba',
             showline=True,
             showticklabels=True,
             linecolor='rgb(204, 204, 204)',
             linewidth=2,
             ticks='outside',
-            ),        
-            yaxis_title='Tasa de confirmados por cada 100000 habitantes',    
-            plot_bgcolor = 'rgb(235,235,235)',
-            margin={'t': 0, 'r': 10, 'l' : 0},
-            
-            )
+            ),
+        yaxis_title='Tasa de confirmados por cada 100000 habitantes',    
+        plot_bgcolor = 'rgb(235,235,235)',
+        margin={'t': 0, 'r': 10, 'l' : 0},
+    )
+
     return fig
 
 def confirmadosStgo():
