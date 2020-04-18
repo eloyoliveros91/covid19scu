@@ -17,7 +17,7 @@ DATA_PATH = PATH.joinpath("data").resolve()
 descarga = DATA_PATH.joinpath("COVID-19.xlsx")
 
 VALID_USERNAME_PASSWORD_PAIRS = [
-    ('covid', 'salud'), ('foo', 'bar')
+    ('covid', 'salud')
 ]
 
 
