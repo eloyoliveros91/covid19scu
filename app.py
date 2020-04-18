@@ -17,7 +17,7 @@ DATA_PATH = PATH.joinpath("data").resolve()
 descarga = DATA_PATH.joinpath("COVID-19.xlsx")
 
 VALID_USERNAME_PASSWORD_PAIRS = [
-    ('hello', 'world'), ('foo', 'bar')
+    ('covid', 'salud'), ('foo', 'bar')
 ]
 
 
@@ -110,6 +110,7 @@ def confirmadosStgo():
     x = casosConfirmados['Día']
     y = casosConfirmados['Casos Confirmados Acumulados']
     cols = ['Casos Confirmados Acumulados', 'Nuevos Casos Confirmados']
+    fechas = np.datetime_as_string(casosConfirmados['Fecha'].values, unit='D')
     for col in cols:
         fig.add_trace(go.Scatter(x=x, y=casosConfirmados[col],
                             mode='lines+markers+text',
@@ -117,10 +118,17 @@ def confirmadosStgo():
                             text = casosConfirmados[col],
                             textposition = "bottom center",
                             textfont = dict(color='rgb(0,0,0)'),
-                            hoverinfo='x+y',
+                            hovertemplate = '<b>Fecha: %{customdata}', 
+                            #hoverinfo='x+y',
                             line=dict(width = 4),
-                            marker=dict(size=12)))    
+                            marker=dict(size=12),
+                            customdata = fechas))    
     fig.update_layout(
+        hoverlabel=dict(
+            bgcolor="white", 
+            font_size=12, 
+            font_family="Rockwell"
+        ),
         xaxis=dict(
             title = 'Días desde el Primer caso confirmado en Santiago de Cuba',
             showline=True,
@@ -130,6 +138,7 @@ def confirmadosStgo():
             ticks='outside',
             #gridcolor = 'rgb(0,0,0)'
             ), 
+            
         autosize  = True,       
         yaxis_title='Total de casos',   
         legend_orientation="h", 
@@ -392,7 +401,15 @@ def totalCasosPais():
     return fig
 
 def sintomas():
+    
     tabla = survey.groupby(['Municipio', 'Sintomas']).size().to_frame(name = 'Total').reset_index()
+    totales = tabla.groupby('Sintomas').sum().reset_index()
+    
+    asin = totales['Total'][0]
+    sint = totales['Total'][1]
+
+    asinxc = np.round((asin*100)/(asin+sint),decimals=2)
+    sintxc = np.round((sint*100)/(asin+sint),decimals=2)
     fig = go.Figure()
     cols = ['Asintomática', 'Sintomática']
     colors = ['rgba(58, 71, 80)', 'rgba(246, 78, 139)']
@@ -414,6 +431,21 @@ def sintomas():
         ))
 
     fig.update_layout(
+        annotations=[
+            dict(
+                x=1,
+                y=1, 
+                showarrow = False,
+                text="<b>Asintomáticos: " + str(asinxc) +"%<br>Sintomáticos: " + str(sintxc) + "%</b>" ,
+                xref="paper",
+                yref="paper",
+                borderwidth=2,
+                borderpad=4,
+                bordercolor="#c7c7c7",
+                font=dict(                
+                    size=12,                
+                    ),
+            ),],
         xaxis = dict(
             tickmode = 'array',
             tickvals = tabla.Municipio.unique() ,
