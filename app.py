@@ -10,7 +10,7 @@ import numpy as np
 import plotly.express as px
 import dash_auth
 from flask import Flask, send_from_directory
-
+import json
 
 PATH = pathlib.Path(__file__).parent
 DATA_PATH = PATH.joinpath("data").resolve()
@@ -83,8 +83,8 @@ def riesgoCuba():
         fig.add_trace(go.Scatter(x=dias, y=value,
                             mode='lines+markers',
                             name=i,
-                            line=dict(width = 4),
-                            marker=dict(size=10),
+                            line=dict(width = 3),
+                            marker=dict(size=7),
                             line_shape='spline',
                             hoverinfo = 'name+y'
                             ))
@@ -99,9 +99,12 @@ def riesgoCuba():
             linewidth=2,
             ticks='outside',
             ),
-        yaxis_title='Tasa de confirmados por cada 100000 habitantes',    
+       # yaxis_title='Tasa de confirmados por cada 100000 habitantes',    
         plot_bgcolor = 'rgb(235,235,235)',
         margin={'t': 0, 'r': 10, 'l' : 0},
+        height = 350,
+        #legend_orientation = 'h',
+        #legend=dict(x=0, y=1)
     )
 
     return fig
@@ -576,6 +579,35 @@ def positividad():
     )
     return fig
 
+def mapaSantiago():
+    mcpios = survey.groupby(['Municipio']).size().to_frame(name='Casos Confirmados').reset_index()
+    mun = pd.DataFrame({'Municipio':['Contramaestre', 'Mella', 'San Luis', 'Segundo Frente', 'Songo - La Maya',
+                                    'Santiago de Cuba', 'Palma Soriano', 'Tercer Frente', 'Guamá', 'Maximo']})
+    res = mun.join(mcpios.set_index('Municipio'), on='Municipio').fillna(0)
+    res['Casos Confirmados'] = res['Casos Confirmados'].astype('int64')
+    res.at[9,'Casos Confirmados'] = 50
+
+    with open(DATA_PATH.joinpath('santiago.geojson'), encoding="Utf-8") as f:
+        data = json.load(f)
+    res['Info'] = '<b>Areas de salud</b>'
+    fig = go.Figure(data=go.Choropleth(
+            geojson = data,
+            locations=res['Municipio'], # Spatial coordinates
+            z = res['Casos Confirmados'], # Data to be color-coded  
+            locationmode = 'geojson-id',
+            featureidkey = 'properties.municipality',
+            colorscale = 'Reds',
+            showscale = False
+            
+        ))
+    fig.update_geos(fitbounds="locations", visible=False)
+    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0},  height=350)
+
+    return fig
+
+
+
+
 summary = html.Div([
                     #imagen(),
                     create_top('Fecha', str(ingresosDF.iloc[-1]['Fecha'].day) + "/" + str(ingresosDF.iloc[-1]['Fecha'].month
@@ -587,6 +619,8 @@ summary = html.Div([
                     create_top('Críticos', ultimoDia[8]),
                     create_top('Fallecidos', ultimoDia[6])],
                     className = 'row', style={"justify-content":"space-around"})
+
+
 
 app = dash.Dash(__name__)
 app.title = 'COVID 19 Santiago de Cuba'
@@ -610,7 +644,7 @@ app.layout = html.Div([
           ], className='navbar navbar-expand navbar-light bg-white topbar mb-2 static-top shadow d-sm-flex align-items-center justify-content-center mb-2' ),
     summary,
     
-    #confirmados stgo, confirmados pais
+    #confirmados stgo, mapa stgo
     html.Div([
             # Area Chart -->
             html.Div([ 
@@ -629,6 +663,47 @@ app.layout = html.Div([
                     ),
                     
               ], className='card shadow mb-4'),
+            ], className='col-xl-7 col-lg-6 px-1'),
+            
+            html.Div([ 
+              html.Div([ 
+                # Card Header - Dropdown -->
+                html.Div([
+                  html.H6(className='text-gray-100 m-0 font-weight-bold text-primary', children='Mapa Provincia Santiago de Cuba'),                  
+                ], className='card-header bg-gradient-primary py-2 d-flex flex-row align-items-center justify-content-between'),
+                # Card Body -->
+                    dcc.Graph(
+                        id='mapa_stg',
+                        figure=mapaSantiago(),
+                        config={
+                            'displayModeBar': False
+                        } 
+                    ),
+                    
+              ], className='card shadow mb-4'),
+            ], className='col-xl-5 col-lg-6 px-1'),
+
+
+          ], className='row'),
+
+    #riesgo Cuba y totales cuba
+    html.Div([
+            # Area Chart -->
+            html.Div([ 
+              html.Div([ 
+                # Card Header - Dropdown -->
+                html.Div([
+                  html.H6(className='text-gray-100 m-0 font-weight-bold text-primary', children='Riesgo epidemiológico en las provincias de Cuba (100000 hab)'),                  
+                ], className='card-header bg-gradient-primary py-2 d-flex flex-row align-items-center justify-content-between'),
+                # Card Body -->
+                    dcc.Graph(
+                        id='riesgoCuba',
+                        figure=riesgoCuba(),
+                        config={
+                            'displayModeBar': False
+                        } 
+                    ),
+              ], className='card shadow mb-4'),
             ], className='col-xl-8 col-lg-7 px-1'),
             # Pie Chart -->
             html.Div([ 
@@ -646,9 +721,9 @@ app.layout = html.Div([
                         } 
                     ),                  
               ], className='card shadow mb-4'),
-            ], className='col-xl-4 col-lg-5 px-1'),
+            ], className='col-xl-4 col-lg-5 px-1'),            
           ], className='row'),
-
+    
     # riesgo stgo, sintomas
     html.Div([
             # Area Chart -->
@@ -683,27 +758,6 @@ app.layout = html.Div([
                     ),                  
               ], className='card shadow mb-4'),
             ], className='col-xl-4 col-lg-5 px-1'),
-          ], className='row'),
-
-    #riesgo Cuba
-    html.Div([
-            # Area Chart -->
-            html.Div([ 
-              html.Div([ 
-                # Card Header - Dropdown -->
-                html.Div([
-                  html.H6(className='text-gray-100 m-0 font-weight-bold text-primary', children='Riesgo epidemiológico en las provincias de Cuba (100000 hab)'),                  
-                ], className='card-header bg-gradient-primary py-2 d-flex flex-row align-items-center justify-content-between'),
-                # Card Body -->
-                    dcc.Graph(
-                        id='riesgoCuba',
-                        figure=riesgoCuba(),
-                        config={
-                            'displayModeBar': False
-                        } 
-                    ),
-              ], className='card shadow mb-4'),
-            ], className='col-xl-12 col-lg-12 px-1'),            
           ], className='row'),
 
     #muestrasProvincias y municipios
