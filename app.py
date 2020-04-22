@@ -665,10 +665,10 @@ app = dash.Dash(__name__)
 app.title = 'COVID 19 Santiago de Cuba'
 server = app.server
 application = app.server
-# auth = dash_auth.BasicAuth(
-#     app,
-#     VALID_USERNAME_PASSWORD_PAIRS
-# )
+auth = dash_auth.BasicAuth(
+    app,
+    VALID_USERNAME_PASSWORD_PAIRS
+)
 
 @server.route("/data/<path:path>")
 def download(path):
