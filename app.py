@@ -48,7 +48,7 @@ def riesgoSantiago():
                                 y = value,
                                 mode='lines+markers',
                                 name=val,          
-                                hoverinfo = 'y',
+                                hoverinfo = 'name + y',
                                 textposition = "top center",
                                 line=dict(width = 3),
                                 marker=dict(size=8)),                            
@@ -66,6 +66,7 @@ def riesgoSantiago():
         ),
         plot_bgcolor = 'rgb(235,235,235)',
         margin={'b': 0, 't': 0, 'r': 10, 'l' : 0},
+        hovermode = 'x unified',
         height = 350,
     )
     return fig
@@ -85,6 +86,7 @@ def riesgoCuba():
                             name=i,
                             line=dict(width = 3),
                             marker=dict(size=7),
+                            hovertemplate = "<b>"+i+": </b> <br>%{y} <extra></extra>",
                             line_shape='spline',
                             hoverinfo = 'name+y'
                             ))
@@ -113,21 +115,23 @@ def confirmadosStgo():
     fig = go.Figure()
     x = casosConfirmados['Día']
     y = casosConfirmados['Casos Confirmados Acumulados']
-    cols = ['Casos Confirmados Acumulados', 'Nuevos Casos Confirmados']
+    cols = ['Casos Confirmados Acumulados', 'Nuevos Casos Confirmados', 'Casos Activos']
+    pos = ['top center', 'bottom center', 'bottom center']
     fechas = np.datetime_as_string(casosConfirmados['Fecha'].values, unit='D')
-    for col in cols:
-        fig.add_trace(go.Scatter(x=x, y=casosConfirmados[col],
+    for cp in range(len(cols)):
+        fig.add_trace(go.Scatter(x=x, y=casosConfirmados[cols[cp]],
                             mode='lines+markers+text',
-                            name=col,
-                            text = casosConfirmados[col],
-                            textposition = "bottom center",
+                            name=cols[cp],
+                            text = casosConfirmados[cols[cp]],
+                            textposition = pos[cp],
                             textfont = dict(color='rgb(0,0,0)'),
-                            hovertemplate = '<b>Fecha: %{customdata}', 
+                            hovertemplate = '<b>(%{customdata}) : %{y}', 
                             #hoverinfo='x+y',
-                            line=dict(width = 4),
-                            marker=dict(size=12),
+                            line=dict(width = 3),
+                            marker=dict(size=8),
                             customdata = fechas))    
-    fig.update_layout(
+
+        fig.update_layout(
         hoverlabel=dict(
             bgcolor="white", 
             font_size=12, 
@@ -142,7 +146,7 @@ def confirmadosStgo():
             ticks='outside',
             #gridcolor = 'rgb(0,0,0)'
             ), 
-            
+        hovermode = 'x unified',
         autosize  = True,       
         yaxis_title='Total de casos',   
         legend_orientation="h", 
@@ -154,9 +158,9 @@ def confirmadosStgo():
             linecolor ='rgb(220,220,220)', 
             linewidth=1.5,
             tickmode = 'array',
-            tickvals = np.arange(0, np.max(y)+7, 4)
+            tickvals = np.arange(0, np.max(y)+10, 5)
             )    
-    )    
+    )   
     return fig
 
 def casosMcpios(chartType):
@@ -316,35 +320,41 @@ def generoEdad():
     hombres = [gr.size()[ge]['M'] for ge in grupos_etareos_tx]
 
     fig = go.Figure()
-
-    fig.add_trace(go.Bar(
-        x=grupos_etareos_tx,
-        y=hombres,
-        name='Hombres',        
-        marker=dict(
-            color='rgba(58, 71, 80)',
-            #line=dict(color='rgba(58, 71, 80, 1.0)', width=3)
-        ),
-        hoverinfo = 'y',
-        base = 0,
-        width = 0.4
-    ))
-
-    fig.add_trace(go.Bar(
-        x=grupos_etareos_tx,
-        y=mujeres,
-        name='Mujeres',
-        hoverinfo = 'y',
-        marker=dict(
-            color='rgba(246, 78, 139)',
-            #line=dict(color='rgba(246, 78, 139, 1.0)', width=3)
-            opacity = 0.85
-        ),
-        base=0,
-        width = 0.4
-    ))
-
+    y = [hombres, mujeres]
+    nombres = ['Hombres', 'Mujeres']
+    colors = ['rgba(58, 71, 80)', 'rgba(246, 78, 139)']
+    for i in range(2):
+        fig.add_trace(go.Bar(
+            x=grupos_etareos_tx,
+            y=y[i],
+            name=nombres[i],        
+            marker=dict(
+                color=colors[i]            
+            ),
+            hoverinfo = 'y',
+            base = 0,
+            width = 0.4
+        ))
+    notas = []
+    values = np.round(((np.add(hombres,mujeres)*100000)/np.array([227001, 296224, 857907, 186352])),decimals=2)
+    for i in range(len(grupos_etareos_tx)):
+        notas+=[dict( x=i, y=np.max([hombres[i],mujeres[i]])+1, showarrow = False, 
+                    text="<b>TI: " + str(values[i]) +"%</b>" ,
+                    borderwidth=2, borderpad=4, bordercolor="#c7c7c7",
+                    font=dict(                
+                        size=10,                
+                    ),),]
+        
+    notas+=[dict( x=1, y=1.2, showarrow = False, 
+                    text="<b>Tasa de Incidencia (TI): <br> Total de casos cada 100000 personas",
+                    borderwidth=2, borderpad=4, bordercolor="#c7c7c7",
+                    xref = "paper", yref = "paper", 
+                    font=dict(                
+                        size=10,                
+                    ),),]
+        
     fig.update_layout(
+        annotations = notas,
         xaxis = dict(
             tickmode = 'array',
             tickvals = grupos_etareos_tx ,
@@ -477,21 +487,10 @@ def imagen():
 def muestrasProvincias():
     
     x = np.datetime_as_string( muestras['FR'].unique(), unit='D')
-    y = muestras[muestras['PROVINCIA']=='SANTIAGO'].groupby('FR').sum().sum(1).values
-
-    provincias = ['GRANMA', 'LAS TUNAS', 'HOLGUÍN', 'GUANTÁNAMO', 'OTRO']
-    names = ['Granma', 'Las Tunas', 'Holguín', 'Guantánamo', 'Otro']
+    provincias = ['SANTIAGO', 'GRANMA', 'LAS TUNAS', 'HOLGUÍN', 'GUANTÁNAMO']
+    names = ['Santiago de Cuba', 'Granma', 'Las Tunas', 'Holguín', 'Guantánamo']
+    visible = [True, 'legendonly', 'legendonly', 'legendonly', 'legendonly']
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=x, y=y,
-                    mode='lines+markers+text',
-                    name='Santiago de Cuba',
-                    text = y,
-                    textposition = "bottom center",
-                    textfont = dict(color='rgb(0,0,0)'),
-                    hoverinfo = 'x',
-                    line=dict(width = 4),
-                    marker=dict(size=12)),
-                    )
     for num, prov in enumerate(provincias):
         y = muestras[muestras['PROVINCIA']==prov].groupby('FR').sum().sum(1).values
         fig.add_trace(go.Scatter(x=x, 
@@ -504,8 +503,24 @@ def muestrasProvincias():
                     hoverinfo = 'x',
                     line=dict(width = 4),
                     marker=dict(size=12),
-                    visible='legendonly'),                    
+                    visible=visible[num]),                    
                     )
+    ipk = pd.read_excel(DATA_PATH.joinpath('COVID-19.xlsx'), sheet_name='Muestras IPK')
+    
+    fig.add_trace(go.Scatter(x=ipk['Fecha'], 
+                y=ipk['Muestras Estudiadas'],
+                mode='lines+markers+text',
+                name='Santiago de Cuba (IPK)',
+                text = ipk['Muestras Estudiadas'],
+                textposition = "bottom center",
+                textfont = dict(color='rgb(0,0,0)'),
+                hoverinfo = 'x',
+                hovertemplate = 'Muestras de Santiago de Cuba<br>analizadas en el IPK: <br>Fecha: %{x}<br>Total: %{y} <extra></extra>', 
+                line=dict(width = 4),
+                marker=dict(size=12),
+                ),                    
+            )
+    
     fig.update_layout(
         margin={'t':20 ,'r':20, 'l':0},
         plot_bgcolor = 'rgb(235,235,235)',
@@ -516,8 +531,9 @@ def muestrasProvincias():
             tickformat = '%m-%d',
         ),
         legend_orientation="h",     
-        legend=dict(x=-.1, y=1.1),
+        legend=dict(x=-.1, y=1.3),
         )
+
 
     return fig
 
@@ -580,33 +596,56 @@ def positividad():
     return fig
 
 def mapaSantiago():
-    mcpios = survey.groupby(['Municipio']).size().to_frame(name='Casos Confirmados').reset_index()
+    mcpios = survey.groupby(['Municipio', 'Estado Actual']).size().to_frame(name='Total').reset_index()
+
+    confirmados = mcpios.groupby(['Municipio']).sum().reset_index()
+
     mun = pd.DataFrame({'Municipio':['Contramaestre', 'Mella', 'San Luis', 'Segundo Frente', 'Songo - La Maya',
                                     'Santiago de Cuba', 'Palma Soriano', 'Tercer Frente', 'Guamá', 'Maximo']})
-    res = mun.join(mcpios.set_index('Municipio'), on='Municipio').fillna(0)
-    res['Casos Confirmados'] = res['Casos Confirmados'].astype('int64')
-    res.at[9,'Casos Confirmados'] = 50
+
+    res = mun.join(confirmados.set_index('Municipio'), on='Municipio').fillna(0)
+    res['Total'] = res['Total'].astype('int64')
+    res.at[9,'Total'] = 50
+
+    for i in mcpios['Municipio'].unique():
+        temp = mcpios[mcpios['Municipio']==i]
+        #print(temp)
+        texto = ''
+        try:
+            texto = r'<b>Activos: ' + str(temp[temp['Estado Actual']=='Activo']['Total'].values[0]) + '<br>'
+        except:
+            texto = '<b>Activos: 0<br>'
+        try:         
+            texto = texto + '<b>Altas Médicas: ' + str(temp[temp['Estado Actual']=='Alta médica']['Total'].values[0]) + '<br>'
+        except:
+            texto = texto + '<b>Altas Médicas: 0<br>'
+        try:         
+            texto = texto +  '<b>Fallecidos: ' + str(temp[temp['Estado Actual']=='Fallecido']['Total'].values[0])
+        except:
+            texto = texto + '<b>Fallecidos: 0<br>'
+        res.loc[res[res['Municipio']==i].index[0], 'Info'] = texto
+    res = res.fillna('')
 
     with open(DATA_PATH.joinpath('santiago.geojson'), encoding="Utf-8") as f:
         data = json.load(f)
-    res['Info'] = '<b>Areas de salud</b>'
+
     fig = go.Figure(data=go.Choropleth(
-            geojson = data,
-            locations=res['Municipio'], # Spatial coordinates
-            z = res['Casos Confirmados'], # Data to be color-coded  
-            locationmode = 'geojson-id',
-            featureidkey = 'properties.municipality',
-            colorscale = 'Reds',
-            showscale = False
-            
-        ))
+        geojson = data,
+        locations=res['Municipio'], # Spatial coordinates
+        z = res['Total'], # Data to be color-coded  
+        locationmode = 'geojson-id',
+        featureidkey = 'properties.municipality',
+        colorscale = 'Reds',
+        hovertemplate = "<b>%{location}:<br>Casos Confirmados: </b>%{z}<br>%{meta} <extra></extra>",    
+        showscale = False,
+        meta = res['Info'],
+        hoverinfo = 'location + z'
+        
+    ))
     fig.update_geos(fitbounds="locations", visible=False)
     fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0},  height=350)
 
     return fig
-
-
-
 
 summary = html.Div([
                     #imagen(),
@@ -626,15 +665,15 @@ app = dash.Dash(__name__)
 app.title = 'COVID 19 Santiago de Cuba'
 server = app.server
 application = app.server
-auth = dash_auth.BasicAuth(
-    app,
-    VALID_USERNAME_PASSWORD_PAIRS
-)
+# auth = dash_auth.BasicAuth(
+#     app,
+#     VALID_USERNAME_PASSWORD_PAIRS
+# )
 
 @server.route("/data/<path:path>")
 def download(path):
     """Serve a file from the upload directory."""
-    return send_from_directory(DATA_PATH, "COVID-19.xlsx", as_attachment=True)
+    return send_from_directory(DATA_PATH, path, as_attachment=True)
 
 
 
@@ -910,6 +949,10 @@ app.layout = html.Div([
     html.P([
         'Acá puede descargar toda la información empleada: ',
         html.A(children = 'covid19SCU', href="./data/COVID-19.xlsx")
+    ],),
+    html.P([
+        'Acá puede descargar toda la información sobre las muestras: ',
+        html.A(children = 'muestrasSCU', href="./data/muestras.xlsx")
     ],),
     
     
