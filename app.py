@@ -68,6 +68,7 @@ def riesgoSantiago():
         margin={'b': 0, 't': 0, 'r': 10, 'l' : 0},
         hovermode = 'x unified',
         height = 350,
+        dragmode = False,
     )
     return fig
 
@@ -107,6 +108,7 @@ def riesgoCuba():
         height = 350,
         #legend_orientation = 'h',
         #legend=dict(x=0, y=1)
+        dragmode = False,
     )
 
     return fig
@@ -158,8 +160,10 @@ def confirmadosStgo():
             linecolor ='rgb(220,220,220)', 
             linewidth=1.5,
             tickmode = 'array',
-            tickvals = np.arange(0, np.max(y)+10, 5)
-            )    
+            #tickvals = np.arange(0, np.max(y)+20, 4),
+            range=(-5,np.max(y)+5)
+            )    ,
+        dragmode = False,
     )   
     return fig
 
@@ -182,7 +186,7 @@ def casosMcpios(chartType):
             text = values,
         )
         fig.update_layout(margin={'t': 4},height = 350,plot_bgcolor = 'rgb(255,255,255)',
-        yaxis=dict(linecolor ='rgb(170,170,170)', linewidth=2))
+        yaxis=dict(linecolor ='rgb(170,170,170)', linewidth=2),dragmode = False,)
         
     return fig
 
@@ -196,7 +200,8 @@ def mcpiosAreaSalud():
                     hover_data=['Total'])
     fig.update_layout(
         height = 350,
-        margin = dict(t=0, l=0, r=0, b=0)
+        margin = dict(t=0, l=0, r=0, b=0),
+        dragmode = False,
     )
     return fig
 
@@ -232,7 +237,8 @@ def confirmadosOte():
         legend=dict(x=-.1, y=1.1),
         margin={'t': 0, 'r':15},
         plot_bgcolor = 'rgb(235,235,235)',
-        height = 350,        
+        height = 350, 
+        dragmode = False,       
     )
     return fig
 
@@ -276,7 +282,8 @@ def muestrasStgo():
             uniformtext_mode='hide',
             margin={'t': 0, 'r':20},
             plot_bgcolor = 'rgb(235,235,235)',
-            height = 350
+            height = 350,
+            dragmode = False,
             )
     fig4.update_xaxes(automargin=True)
     return fig4
@@ -305,7 +312,8 @@ def ingresos(barra1, barra2, nombre1, nombre2):
             yaxis_title='Total de personas ingresadas',        
             margin={'t': 0, 'r':20},
             plot_bgcolor = 'rgb(235,235,235)',
-        height = 350
+        height = 350,
+        dragmode = False,
             )
     fig3.update_xaxes(automargin=True)
 
@@ -369,7 +377,8 @@ def generoEdad():
         bargroupgap = 1,    
         margin={'t': 20, 'r':20, 'b':0},
         plot_bgcolor = 'rgb(235,235,235)',
-        height = 335
+        height = 335,
+        dragmode = False,
     )
     return fig
 
@@ -410,7 +419,8 @@ def totalCasosPais():
                 tickmode = 'array',
                 tickvals = np.arange(0, np.max(provincias.values[1:16]), 20),
                 title = 'Total de casos confirmados'
-        )
+        ),
+        dragmode = False,
     )
     return fig
 
@@ -472,7 +482,8 @@ def sintomas():
         bargroupgap = 1,    
         margin={'t': 20, 'r':20, 'b':0, 'l':0},
         plot_bgcolor = 'rgb(235,235,235)',
-        height = 350
+        height = 350,
+        dragmode = False,
     )
     return fig
 
@@ -532,6 +543,7 @@ def muestrasProvincias():
         ),
         legend_orientation="h",     
         legend=dict(x=-.1, y=1.3),
+        dragmode = False,
         )
 
 
@@ -592,6 +604,7 @@ def positividad():
             ),
             legend_orientation="h",     
             legend=dict(x=-.1, y=1.1),
+            dragmode = False,
     )
     return fig
 
@@ -643,7 +656,7 @@ def mapaSantiago():
         
     ))
     fig.update_geos(fitbounds="locations", visible=False)
-    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0},  height=350)
+    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0},  height=350, dragmode = False,)
 
     return fig
 
@@ -665,10 +678,10 @@ app = dash.Dash(__name__)
 app.title = 'COVID 19 Santiago de Cuba'
 server = app.server
 application = app.server
-auth = dash_auth.BasicAuth(
-    app,
-    VALID_USERNAME_PASSWORD_PAIRS
-)
+# auth = dash_auth.BasicAuth(
+#     app,
+#     VALID_USERNAME_PASSWORD_PAIRS
+# )
 
 @server.route("/data/<path:path>")
 def download(path):
