@@ -960,11 +960,11 @@ app.layout = html.Div([
     # html.Link(children = ['Puede consultar toda la información aqui: '],
     # href = "./assets/COVID-19.xlsx")
     html.P([
-        'Acá puede descargar toda la información empleada: ',
+        'Aquí puede descargar toda la información empleada: ',
         html.A(children = 'covid19SCU', href="./data/COVID-19.xlsx")
     ],),
     html.P([
-        'Acá puede descargar toda la información sobre las muestras: ',
+        'Aquí puede descargar toda la información sobre las muestras: ',
         html.A(children = 'muestrasSCU', href="./data/muestras.xlsx")
     ],),
     
