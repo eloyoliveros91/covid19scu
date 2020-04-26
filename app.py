@@ -8,6 +8,7 @@ import plotly.graph_objs as go
 import datetime as dt
 import numpy as np
 import plotly.express as px
+from plotly.subplots import make_subplots
 import dash_auth
 from flask import Flask, send_from_directory
 import json
@@ -68,8 +69,10 @@ def riesgoSantiago():
         margin={'b': 0, 't': 0, 'r': 10, 'l' : 0},
         hovermode = 'x unified',
         height = 350,
-        dragmode = False,
+        dragmode = False, 
+               
     )
+    
     return fig
 
 def riesgoCuba():
@@ -377,7 +380,7 @@ def generoEdad():
         bargroupgap = 1,    
         margin={'t': 20, 'r':20, 'b':0},
         plot_bgcolor = 'rgb(235,235,235)',
-        height = 335,
+        height = 350,
         dragmode = False,
     )
     return fig
@@ -408,16 +411,18 @@ def totalCasosPais():
         y = provincias.index[1:16],
         x = provincias.values[1:16],
         orientation = 'h',
-        marker_color = colors
+        marker_color = colors,
+        hovertemplate = '<b>Confirmados: %{x}</b> <extra></extra>', 
     ))
     fig.update_layout(
         yaxis={'categoryorder':'total ascending'},
         margin={'t':20 ,'r':20},
         plot_bgcolor = 'rgb(235,235,235)',
         height = 350,
+        hovermode = 'y unified',
         xaxis=dict(            
                 tickmode = 'array',
-                tickvals = np.arange(0, np.max(provincias.values[1:16]), 20),
+                tickvals = np.arange(0, np.max(provincias.values[1:16]), 50),
                 title = 'Total de casos confirmados'
         ),
         dragmode = False,
@@ -487,6 +492,64 @@ def sintomas():
     )
     return fig
 
+def relacionSintomasXCasos():
+    df = pd.read_excel(DATA_PATH.joinpath("COVID-19.xlsx"), sheet_name = 'Sintomas')
+    sintomas = df['Nombre corto']
+    sintRedu = df['Sintomas']
+    valores = df['PC']
+
+    df = pd.read_excel(DATA_PATH.joinpath("COVID-19.xlsx"), sheet_name = 'APP')
+    app = df['APP']
+    appRedu = df['Nombre corto']
+    valoresApp = df['PC']
+
+    fig = make_subplots(rows=1, cols=2, shared_yaxes=True)
+
+    fig.add_trace(go.Bar(
+        x = sintomas,
+        y = valores,
+        #orientation = 'h',
+        hovertemplate = '<b>%{customdata}: %{y}%</b> <extra></extra>',
+        customdata = sintRedu,
+        name = 'Principales Síntomas'
+    ),1,1)
+
+    fig.add_trace(go.Bar(
+        x = appRedu,
+        y = valoresApp,
+        #orientation = 'h',
+        hovertemplate = '<b>%{customdata}: %{y}%</b> <extra></extra>',
+        customdata = app,
+        name = 'Principales APP'
+    ),1,2)
+
+    fig.update_layout(
+        annotations = [dict( x=1, y=0.7, showarrow = False, 
+                    text="<b>Las APP señaladas con * refieren a que<br> coinciden con otras a la vez",
+                    borderwidth=2, borderpad=4, bordercolor="#c7c7c7",
+                    xref = "paper", yref = "paper", 
+                    font=dict(                
+                        size=14,                
+                    ))],
+        xaxis= dict(
+            categoryorder = 'total descending',
+            #tickvals = sintRedu,   
+            ),
+        xaxis2= dict(
+            categoryorder = 'total descending',
+            #tickvals = app,   
+            ),
+        hovermode = 'x unified',
+        plot_bgcolor = 'rgb(235,235,235)',
+        #height = 350,
+        dragmode = False,
+        legend_orientation = 'h',
+        margin={'t':5 ,'r':30, 'l':30, 'b':0},
+        legend = dict(x=0, y=1.12)
+    )
+    fig.update_xaxes(tickangle=45)
+    return fig
+
 def imagen():    
     card = html.Div([        
             html.Img(src = "./assets/uo.png",
@@ -552,49 +615,32 @@ def muestrasProvincias():
 def positividad():
     x = np.datetime_as_string( muestras['FR'].unique(), unit='D')
 
-    y = muestras[muestras['PROVINCIA']=='SANTIAGO'].groupby('FR').sum()    
-    
-    positivos = np.cumsum(y[['POS-COVID-19', 'POS-COVID-19/EVOLUTIVO DE CONFIRMADO']].sum(1)).values
-       
-    totalesCum = np.cumsum(y.sum(1)).values    
-    positividad = (positivos*100)/totalesCum
-
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=x, y=positividad,
-                    mode='lines+markers+text',
-                    name='Santiago de Cuba',
-                    text = positividad,
-                    textposition = "bottom center",
-                    texttemplate =  '%{y:.1f}',
-                    textfont = dict(color='rgb(0,0,0)'),
-                    line=dict(width = 4),
-                    hoverinfo = 'x',
-                    marker=dict(size=12)),                  
-                )
     
-    provincias = ['GRANMA', 'LAS TUNAS', 'HOLGUÍN', 'GUANTÁNAMO']
-    names = ['Granma', 'Las Tunas', 'Holguín', 'Guantánamo']
+    provincias = ['SANTIAGO', 'GRANMA', 'LAS TUNAS', 'HOLGUÍN', 'GUANTÁNAMO']
+    names = ['Santiago de Cuba', 'Granma', 'Las Tunas', 'Holguín', 'Guantánamo']
+    visible = [True, 'legendonly', 'legendonly', 'legendonly', 'legendonly' ]
     
-    for col, prov in enumerate(provincias):
+    for col, prov in enumerate(provincias):        
         y = muestras[muestras['PROVINCIA']==prov].groupby('FR').sum()
         positivos = np.cumsum(y[['POS-COVID-19', 'POS-COVID-19/EVOLUTIVO DE CONFIRMADO']].sum(1)).values       
         totalesCum = np.cumsum(y.sum(1)).values    
         positividad = (positivos*100)/totalesCum
 
         fig.add_trace(go.Scatter(x=x, y=positividad,
-            mode='lines+markers+text',
+            mode='lines+markers',
             name=names[col],
             text = positividad,
             textposition = "bottom center",
-            texttemplate =  '%{y:.1f}',
+            hovertemplate =  names[col] + ': %{x}<br><b>Positividad: %{y:.2f}%</b> <extra></extra>',
             textfont = dict(color='rgb(0,0,0)'),
             line=dict(width = 4),
             hoverinfo = 'x',
-            visible='legendonly',
+            visible=visible[col],
             marker=dict(size=12)),                  
         )
     fig.update_layout(
-            margin={'t':0 ,'r':20, 'l':0},
+            margin={'t':0 ,'r':10, 'l':0},
             plot_bgcolor = 'rgb(235,235,235)',
             height = 350,
             xaxis = dict(
@@ -602,6 +648,7 @@ def positividad():
                 tickvals=x,
                 tickformat = '%m-%d',
             ),
+            hovermode = 'x unified',
             legend_orientation="h",     
             legend=dict(x=-.1, y=1.1),
             dragmode = False,
@@ -745,7 +792,7 @@ app.layout = html.Div([
               html.Div([ 
                 # Card Header - Dropdown -->
                 html.Div([
-                  html.H6(className='text-gray-100 m-0 font-weight-bold text-primary', children='Riesgo epidemiológico en las provincias de Cuba (100000 hab)'),                  
+                  html.H6(className='text-gray-100 m-0 font-weight-bold text-primary', children='Tasa de incidencia por provincia (casos confirmados por cada 100000 habitantes)'),                  
                 ], className='card-header bg-gradient-primary py-2 d-flex flex-row align-items-center justify-content-between'),
                 # Card Body -->
                     dcc.Graph(
@@ -811,6 +858,42 @@ app.layout = html.Div([
               ], className='card shadow mb-4'),
             ], className='col-xl-4 col-lg-5 px-1'),
           ], className='row'),
+
+    #sintomas y APPs
+    html.Div([
+        # Area Chart -->
+        html.Div([ 
+        html.Div([ 
+            # Card Header - Dropdown -->
+            html.Div([
+            html.H6(className='text-gray-100 m-0 font-weight-bold text-primary', children='Principales síntomas y Antecedentes patológicos personales (APP) de los casos confirmados'),                  
+            ], className='card-header bg-gradient-primary py-2 d-flex flex-row align-items-center justify-content-between'),
+            # Card Body -->
+                dcc.Graph(
+                    id='sintomasApps',
+                    figure=relacionSintomasXCasos(),
+                    config={
+                        'displayModeBar': False
+                    } 
+                ),
+        ], className='card shadow mb-4'),
+        ], className='col-xl-12 col-lg-12 px-1'),
+        # # Pie Chart -->
+        # html.Div([ 
+        #     html.Div([                 
+        #     html.Div([
+        #         html.H6(className='text-gray-100 m-0 font-weight-bold text-primary', children='Relación por Municipios y Áreas de Salud'),                  
+        #     ], className='card-header bg-gradient-primary py-2 d-flex flex-row align-items-center justify-content-between'),
+        #         dcc.Graph(
+        #             id='municipioAreaSalud',
+        #             figure=mcpiosAreaSalud(),
+        #             config={
+        #                 'displayModeBar': False
+        #             } 
+        #         ),                  
+        #     ], className='card shadow mb-4'),
+        # ], className='col-xl-5 col-lg-5 px-1'),                 
+    ], className='row'),
 
     #muestrasProvincias y municipios
     html.Div([
@@ -973,4 +1056,4 @@ app.layout = html.Div([
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=True, port=4444)
